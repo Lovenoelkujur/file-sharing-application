@@ -2,6 +2,7 @@ const path = require("path");
 const multer = require("multer");
 const { v4: uuidv4 } = require('uuid');
 
+const FileModel =  require("../models/file")
 const uploadDirectoryPath = path.join(__dirname, "..", "files")
 
 // console.log(uploadDirectoryPath);
@@ -24,16 +25,27 @@ const upload = multer({
 // To Upload File
 const uploadFile = async (req, res) => {
 
-    upload(req, res, (error) => {
+    upload(req, res, async (error) => {
         // console.log(req.body);
         if(error){
             console.log("Error While Uploading File !", error);
             return;
         }
+        // Save the File in DB
+        // console.log(req.file);
+        const newFile = new FileModel({
+            originalFilename : req.file.originalname,
+            newFilename : req.file.filename,
+            path : req.file.path,
+        });
+
+        const newlyInsertedFile = await newFile.save();
+
         console.log("File Uploaded Successfully.");
         res.json({
             success : true,
-            message : "File Uploaded Successfully."
+            message : "File Uploaded Successfully.",
+            fileId : newlyInsertedFile._id,
         })
     })
 }
