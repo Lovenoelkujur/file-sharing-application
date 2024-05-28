@@ -1,32 +1,14 @@
-const path = require("path");
-const multer = require("multer");
-const { v4: uuidv4 } = require('uuid');
 
-const FileModel =  require("../models/file")
-const uploadDirectoryPath = path.join(__dirname, "..", "files")
 
-// console.log(uploadDirectoryPath);
+const FileModel =  require("../models/file");
+const mailService = require("../services/mailService");
+const fileUploadService = require("../services/uploadService");
 
-// Storage Path in DB
-const storage = multer.diskStorage({
-    destination : (req, file, cb) => {
-        cb(null, uploadDirectoryPath)
-    },
-    filename : (req, file, cb) => {
-        // console.log(file.originalname);
-        const filename = uuidv4() + path.extname(file.originalname);
-        cb(null, filename)
-    },
-});
-
-// number of Files to store
-const upload = multer({
-    storage : storage,
-}).single("file");
 
 // To Upload File
 const uploadFile = async (req, res) => {
-
+    // number of Files to store
+    const upload = fileUploadService.single("file");
     upload(req, res, async (error) => {
         // console.log(req.body);
         if(error){
@@ -71,7 +53,7 @@ const generateDynamicLink = async (req, res) => {
         res.json({
             success : true,
             message : "Generated Link Successfully.",
-            resilt : "http://localhost:9000/files/download/" + fileId,
+            result : "http://localhost:9000/files/download/" + fileId,
         }) 
     } 
     catch (error) {
@@ -101,9 +83,54 @@ const downloadFile = async (req, res) => {
 
 // To Send File
 const sendFile = async (req, res) => {
+    // console.log(req.body);
+    const {fileId, shareTo} = req.body;
+    const downloadableLink = "http://localhost:9000/files/download/" + fileId;
+
+    // Send Mail
+    const info = await mailService.sendMail({
+        from: 'developer@provider.com', // Replace with your email address
+        to: shareTo, // Replace with the recipient's email address
+        subject: 'New File shared from File-Sharing-Application', // Replace with your desired subject
+        // text: 'This is a plain text email body.', // Plain text content
+        // or  // HTML content
+        html: `
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <style>
+                        body{
+                            text-align: center;
+                        }
+
+                        .download-link {
+                            display: inline-block;
+                            padding: 10px 20px;
+                            background-color: #4CAF50;
+                            color: white;
+                            text-decoration: none;
+                            font-family: Arial, sans-serif;
+                            border-radius: 5px;
+                        }
+                
+                        .download-link:hover {
+                            background-color: #45a049;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Click Download button to download the File.</h2>
+                    <a href="${downloadableLink}" class="download-link">Download Now</a>
+                </body>
+            </html>
+        `
+    });
+
+    console.log("Email Send Successfully !", info.messageId);
+
     res.json({
         success : true,
-        message : "File Send Successfully."
+        message : "File Send on Email Successfully."
     })
 }
 
