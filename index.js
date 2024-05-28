@@ -6,6 +6,8 @@ const PORT = 9000;
 
 const app = express();
 
+app.use(express.json());
+
 // DataBase Connection
 mongoose
     .connect("mongodb://localhost:27017/filesharingapp")
